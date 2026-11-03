@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SkillMatrix</title>
+  <meta name="description" content="Skills and competence matrix for labs and manufacturing teams: who is authorised to run what, where the gaps are, and what training is due.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="topbar">
+    <button class="btn ghost" id="menuBtn" aria-label="Open menu">☰</button>
+    <span>SkillMatrix</span>
+  </div>
+  <div class="shell">
+    <aside class="side" id="side">
+      <div class="brand"><span class="brand-mark"><i></i><i></i><i></i><i></i></span> SkillMatrix</div>
+      <nav class="nav" id="nav"></nav>
+      <div class="side-foot">
+        <label for="userSel">Signed in as</label>
+        <select id="userSel"></select>
+        <p class="small muted" style="margin-top:8px">Changes are recorded under this name.</p>
+      </div>
+    </aside>
+    <main class="main" id="main" tabindex="-1"></main>
+  </div>
+  <dialog id="dlg"></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="js/sample.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
