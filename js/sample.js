@@ -124,6 +124,41 @@ window.SM_SAMPLE = (function () {
     });
   });
 
+  // Quality policy / culture / ethics awareness (ISO 9001:2026 clause 7.3), required for everyone
+  courses.push({ id: 'c9', name: 'Quality policy, culture & ethics briefing', validityMonths: 12, awareness: true });
+  people.forEach(p => {
+    const r = rnd();
+    records['c9|' + p.id] = { required: true, completed: r < 0.1 ? '' : daysAgo(Math.floor(rnd() * 420)) };
+  });
+
+  // Roles: what each job needs (ISO 9001 7.2 a). Built from the targets above so the sample is consistent.
+  const roleNames = [...new Set(people.map(p => p.role))];
+  const roles = roleNames.map((name, i) => ({ id: 'r' + (i + 1), name, reqs: {} }));
+  people.forEach(p => { p.roleId = roles.find(r => r.name === p.role).id; });
+  roles.forEach(role => {
+    const members = people.filter(p => p.roleId === role.id);
+    equipment.forEach(e => {
+      const ds = members.map(m => (ratings[e.id + '|' + m.id] || {}).desired || 0);
+      const min = Math.min.apply(null, ds);
+      if (min >= 2 && e.owner !== members[0].id) role.reqs[e.id] = min;
+    });
+  });
+
+  // Basis of competence (7.2 b) and effectiveness check (7.2 c) for each sign-off.
+  // About one in eight sign-offs is left without a check, so the evidence pack shows what an auditor would flag.
+  const methods = ['Observed practical', 'Supervised runs', 'Written or oral assessment', 'Review of work output'];
+  const signers = ['Aoife Brennan', 'Daniel Okafor', 'Mei Lin', 'Tomás Herrera', 'Hana Kowalska'];
+  Object.keys(ratings).forEach(k => {
+    const r = ratings[k]; const [eid, pid] = k.split('|'); const e = equipment.find(x => x.id === eid);
+    if (r.actual < 1) return;
+    const own = e.owner === pid;
+    r.basis = own ? (rnd() < 0.5 ? 'Experience' : 'Qualification') : 'Training';
+    r.basisNote = own ? 'Equipment owner; manufacturer training course' : '';
+    r.by = own ? 'Aoife Brennan' : signers[Math.floor(rnd() * signers.length)];
+    if (rnd() < 0.88) r.check = { method: own ? 'Review of work output' : methods[Math.floor(rnd() * methods.length)], result: 'Competent', date: r.updated, by: r.by };
+    if (rnd() < 0.4) r.evidence = 'QMS/TR-' + (1000 + Math.floor(rnd() * 900));
+  });
+
   const audit = [
     { ts: daysAgo(3) + 'T10:12:00', type: 'rating', by: 'Daniel Okafor', detail: 'Ciarán Walsh · Universal tensile tester 100 kN: actual 1 → 2 (supervised sign-off complete)' },
     { ts: daysAgo(9) + 'T14:40:00', type: 'training', by: 'Hana Kowalska', detail: 'Mei Lin · Chemical safety: completed ' + daysAgo(9) },
@@ -131,7 +166,7 @@ window.SM_SAMPLE = (function () {
   ];
 
   return {
-    version: 1,
+    version: 2,
     org: { name: 'Northbridge Materials Lab (sample)' },
     scale: [
       { level: 0, label: 'Not authorised to operate' },
@@ -140,7 +175,7 @@ window.SM_SAMPLE = (function () {
       { level: 3, label: 'Authorised to operate and train others' },
       { level: 4, label: 'Expert: can calibrate / maintain' }
     ],
-    people, equipment, ratings, courses, records, audit,
+    people, equipment, ratings, courses, records, audit, roles,
     user: 'Aoife Brennan'
   };
 })();
