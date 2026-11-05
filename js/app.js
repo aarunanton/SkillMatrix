@@ -11,6 +11,15 @@
 
   // ---------- state ----------
   let S = migrate(load() || clone(window.SM_SAMPLE));
+
+  // Appearance is a per-viewer choice. Light (the cream design) unless the viewer picks otherwise.
+  const THEME_KEY = 'skillmatrix.theme';
+  function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { return 'light'; } }
+  function applyTheme(t) {
+    if (t === 'system') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+  }
+  applyTheme(getTheme());
   let ui = { area: '', q: '', mode: 'all', person: '', tArea: '' };
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -447,6 +456,8 @@
           <h2 style="margin-top:20px">Authorisation scale</h2>
           ${S.scale.map(s => `<div class="field" style="display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:center"><span class="lvl l${s.level}">${s.level}</span><input data-scale="${s.level}" value="${esc(s.label)}" aria-label="Level ${s.level} meaning"></div>`).join('')}
           <button class="btn primary" id="saveSettings">Save</button>
+          <h2 style="margin-top:32px">Appearance</h2>
+          <div class="field"><label for="themeSel">Colour theme</label><select id="themeSel" style="max-width:280px">${[['light', 'Light (default)'], ['dark', 'Dark'], ['system', 'Match my computer']].map(([v, l]) => `<option value="${v}" ${getTheme() === v ? 'selected' : ''}>${l}</option>`).join('')}</select><div class="hint">Saved for you on this browser only.</div></div>
         </div>
         <div class="card"><h2>Your data</h2>
           <p class="small muted">Back up or move your matrix between computers.</p>
@@ -775,6 +786,7 @@
     if (t.id === 'marea') { ui.area = t.value; render(); }
     if (t.id === 'mperson') { ui.person = t.value; history.replaceState(null, '', '#/matrix'); render(); }
     if (t.id === 'auditType') { ui.auditType = t.value; render(); }
+    if (t.id === 'themeSel') { try { localStorage.setItem(THEME_KEY, t.value); } catch (e) {} applyTheme(t.value); toast('Theme updated'); }
     if (t.id === 'evPerson') { ui.evPerson = t.value; history.replaceState(null, '', '#/evidence'); render(); }
     if (t.id === 'userSel') { S.user = t.value; save(); toast('Changes will be recorded as ' + t.value); }
     if (t.id === 'importJson' && t.files[0]) {
