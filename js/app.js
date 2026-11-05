@@ -140,8 +140,10 @@
     ['evidence', 'ISO 9001 evidence'], ['audit', 'Change log'], ['settings', 'Settings']
   ];
   function renderNav(cur) {
-    $('#nav').innerHTML = routes.map(([r, l]) =>
-      `<a href="#/${r}" class="${cur === r ? 'active' : ''}"><svg viewBox="0 0 24 24">${icons[r]}</svg>${l}</a>`).join('');
+    const groups = [['Daily', ['dashboard', 'matrix', 'people']], ['Set up', ['equipment', 'roles', 'training']], ['Audit', ['evidence', 'audit', 'settings']]];
+    const label = r => (routes.find(x => x[0] === r) || [, r])[1];
+    $('#nav').innerHTML = groups.map(([g, rs]) => `<div class="group">${g}</div>` + rs.map(r =>
+      `<a href="#/${r}" class="${cur === r ? 'active' : ''}" ${cur === r ? 'aria-current="page"' : ''}><svg viewBox="0 0 24 24" aria-hidden="true">${icons[r]}</svg>${label(r)}</a>`).join('')).join('');
     const sel = $('#userSel');
     sel.innerHTML = S.people.slice().sort(byName).map(p => `<option ${p.name === S.user ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
   }
@@ -155,6 +157,8 @@
     const spof = covers.filter(x => x.n <= 1);
     const noTrainer = gaps().filter(x => !trainers(x.eid).some(t => t.id !== x.pid));
     const ev = evidenceGaps();
+    const signed = Object.keys(S.ratings).filter(k => { const [e, p] = k.split('|'); return equip(e) && person(p) && S.ratings[k].actual >= 1; }).length;
+    const readyPct = signed ? Math.floor((signed - ev.length) / signed * 100) : 100;
     const isSample = S.org.name.includes('(sample)');
     const ico = {
       risk: '<path d="M12 4l9 16H3zM12 10v4M12 17h.01" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
@@ -174,20 +178,27 @@
       <div class="page-head" style="margin-bottom:4px"><div><h1>${esc(S.org.name)}</h1><p class="muted" style="margin:0">${S.people.length} people, ${S.equipment.length} equipment items and skills across ${areas().length} areas</p></div>
         <div class="actions"><a class="btn primary" href="#/matrix">Open the matrix</a></div></div>
       <div class="status">
-        <a href="#/equipment" class="${spof.length ? 'bad' : 'ok'}"><b>${spof.length}</b> ${spof.length === 1 ? 'item depends' : 'items depend'} on one person or none</a>
-        <a href="#/training" class="${overdue.length ? 'bad' : 'ok'}"><b>${overdue.length}</b> safety training overdue</a>
-        <a href="#/training" class="${soon.length ? 'warn' : 'ok'}"><b>${soon.length}</b> expiring in ${DUE_SOON_DAYS} days</a>
-        <a href="#/matrix?mode=gaps" class="${g.length ? 'warn' : 'ok'}"><b>${g.length}</b> below target, across ${new Set(g.map(x => x.pid)).size} people</a>
-        <a href="#/evidence?show=gaps" class="${ev.length ? 'warn' : 'ok'}"><b>${ev.length}</b> ${ev.length === 1 ? 'sign-off' : 'sign-offs'} missing ISO 9001 evidence</a>
+        <a href="#/equipment" class="${spof.length ? 'bad' : 'ok'}"><b>${spof.length}</b><span>${spof.length === 1 ? 'item depends' : 'items depend'} on one person or none</span></a>
+        <a href="#/training" class="${overdue.length ? 'bad' : 'ok'}"><b>${overdue.length}</b><span>safety training overdue</span></a>
+        <a href="#/training" class="${soon.length ? 'warn' : 'ok'}"><b>${soon.length}</b><span>expiring in ${DUE_SOON_DAYS} days</span></a>
+        <a href="#/matrix?mode=gaps" class="${g.length ? 'warn' : 'ok'}"><b>${g.length}</b><span>below target, across ${new Set(g.map(x => x.pid)).size} people</span></a>
+        <a href="#/evidence?show=gaps" class="${ev.length ? 'warn' : 'ok'}"><b>${ev.length}</b><span>${ev.length === 1 ? 'sign-off' : 'sign-offs'} missing ISO 9001 evidence</span></a>
       </div>
       <div class="grid split">
         <section class="card">
           <h2>Needs attention</h2>
-          ${shown.length ? `<ul class="attn">${shown.map(x => `<li data-go="${x.go}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ico[x.ico]}</svg><div><div class="t1">${esc(x.t1)}</div><div class="t2">${esc(x.t2)}</div></div><div>${x.right}</div></li>`).join('')}</ul>
+          ${shown.length ? `<ul class="attn">${shown.map(x => `<li data-go="${x.go}"><svg class="ico ${x.ico === 'risk' ? 'risk' : ''}" viewBox="0 0 24 24" aria-hidden="true">${ico[x.ico]}</svg><div><div class="t1">${esc(x.t1)}</div><div class="t2">${esc(x.t2)}</div></div><div>${x.right}</div></li>`).join('')}</ul>
             ${items.length > shown.length ? `<p class="small muted" style="margin:10px 0 0">${items.length - shown.length} more. See <a href="#/equipment">Equipment</a> and <a href="#/training">Recurring training</a>.</p>` : ''}`
             : '<div class="empty-state">Nothing needs attention. Every item has cover and all training is in date.</div>'}
         </section>
         <div class="grid" style="gap:16px">
+          <section class="card info readiness">
+            <h2 style="margin-bottom:4px">Audit readiness</h2>
+            <p class="small" style="margin-bottom:20px">ISO 9001 clause 7.2 evidence across all sign-offs</p>
+            <div><span class="big">${readyPct}%</span> <span class="small">complete</span></div>
+            <div class="meter" role="img" aria-label="${readyPct}% of sign-offs have complete evidence"><i style="width:${readyPct}%"></i></div>
+            ${ev.length ? `<a href="#/evidence?show=gaps">See the ${ev.length} missing ${ev.length === 1 ? 'record' : 'records'}</a>` : '<span class="small">Every sign-off has its evidence.</span>'}
+          </section>
           <section class="card">
             <h2>Gaps with no one to train</h2>
             ${noTrainer.length ? `<p class="small muted">Targets nobody here can sign off, because no one else is at level 3 or above.</p><ul class="attn">${noTrainer.slice(0, 5).map(x => `<li data-cell="${x.eid}|${x.pid}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ico.person}</svg><div><div class="t1">${esc(pname(x.pid))}</div><div class="t2">${esc(equip(x.eid).name)}</div></div><div><span class="lvl l${x.actual}">${x.actual}</span> → <span class="lvl l${x.desired}">${x.desired}</span></div></li>`).join('')}</ul>`
